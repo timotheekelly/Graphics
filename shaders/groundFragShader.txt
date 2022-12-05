@@ -1,0 +1,10 @@
+#version 330
+
+in vec3 LightIntensity;
+in vec2 vertTex;
+
+uniform sampler2D sTexture;
+
+void main(){
+	gl_FragColor = texture(sTexture, vertTex);
+}
