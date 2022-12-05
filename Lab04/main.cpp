@@ -58,13 +58,15 @@ MESH TO LOAD
 ----------------------------------------------------------------------------*/
 // this mesh is a dae file format but you should be able to use any other format too, obj is typically what is used
 // put the mesh in your project directory, or provide a filepath for it here
-#define SNOWMAN_NAME "snwmnnn.dae"
+#define SNOWMAN_NAME "snwmnnnSmooth.dae"
 #define SLED_NAME "sled.dae"
 #define GROUND_NAME "landscape.dae"
 #define PRESENT_NAME "present.dae"
 
 // Textures
 const char* snowFloor = "winter.jpg";
+const char* snowmanTexture = "snowman.jpg";
+const char* sledTexture = "sled.jpg";
 
 /*----------------------------------------------------------------------------
 ----------------------------------------------------------------------------*/
@@ -263,6 +265,56 @@ GLuint CompileShaders(const char* vertexShader, const char* fragmentShader)
 }
 #pragma endregion SHADER_FUNCTIONS
 
+void vbovaoStuff(ModelData model, const char* texture, int i) {
+	int width, height, nrChannels;
+	unsigned char* data;
+
+	glGenTextures(1, &VTO[i]);
+	glBindTexture(GL_TEXTURE_2D, VTO[i]);
+	stbi_set_flip_vertically_on_load(1);
+
+	// load and generate the texture
+	data = stbi_load(texture, &width, &height, &nrChannels, 0);
+	if (data)
+	{
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+		std::cout << "Loaded texture" << std::endl;
+	}
+	else
+	{
+		std::cout << "Failed to load texture" << std::endl;
+	}
+	stbi_image_free(data);
+
+	glGenBuffers(1, &VP_VBO[i]);
+	glBindBuffer(GL_ARRAY_BUFFER, VP_VBO[i]);
+	glBufferData(GL_ARRAY_BUFFER, model.mPointCount * sizeof(vec3), &model.mVertices[0], GL_STATIC_DRAW);
+
+	glGenBuffers(1, &VN_VBO[i]);
+	glBindBuffer(GL_ARRAY_BUFFER, VN_VBO[i]);
+	glBufferData(GL_ARRAY_BUFFER, model.mPointCount * sizeof(vec3), &model.mNormals[0], GL_STATIC_DRAW);
+
+	glGenBuffers(1, &VT_VBO[i]);
+	glBindBuffer(GL_ARRAY_BUFFER, VT_VBO[i]);
+	glBufferData(GL_ARRAY_BUFFER, model.mPointCount * sizeof(vec2), &model.mTextureCoords[0], GL_STATIC_DRAW);
+
+	glGenVertexArrays(1, &VAO[i]);
+	glBindVertexArray(VAO[i]);
+
+	glEnableVertexAttribArray(loc1);
+	glBindBuffer(GL_ARRAY_BUFFER, VP_VBO[i]);
+	glVertexAttribPointer(loc1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+
+	glEnableVertexAttribArray(loc2);
+	glBindBuffer(GL_ARRAY_BUFFER, VN_VBO[i]);
+	glVertexAttribPointer(loc2, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+
+	glEnableVertexAttribArray(loc3);
+	glBindBuffer(GL_ARRAY_BUFFER, VT_VBO[i]);
+	glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
+}
+
 // VBO Functions - click on + to expand
 #pragma region VBO_FUNCTIONS
 void generateObjectBufferMesh() {
@@ -292,92 +344,14 @@ void generateObjectBufferMesh() {
 	unsigned char* data;
 
 
-	// Snowman
+	// -- Snowman 1 --------------------------------------------
+	vbovaoStuff(snowman, snowmanTexture, 0);
 
-	glGenBuffers(1, &VP_VBO[0]);
-	glBindBuffer(GL_ARRAY_BUFFER, VP_VBO[0]);
-	glBufferData(GL_ARRAY_BUFFER, snowman.mPointCount * sizeof(vec3), &snowman.mVertices[0], GL_STATIC_DRAW);
+	// -- Sled ------------------------------------------------
+	vbovaoStuff(sled, sledTexture, 1);
 
-	glGenBuffers(1, &VN_VBO[0]);
-	glBindBuffer(GL_ARRAY_BUFFER, VN_VBO[0]);
-	glBufferData(GL_ARRAY_BUFFER, snowman.mPointCount * sizeof(vec3), &snowman.mNormals[0], GL_STATIC_DRAW);
-
-	glGenVertexArrays(1, &VAO[0]);
-	glBindVertexArray(VAO[0]);
-
-	glEnableVertexAttribArray(loc1);
-	glBindBuffer(GL_ARRAY_BUFFER, VP_VBO[0]);
-	glVertexAttribPointer(loc1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
-
-	glEnableVertexAttribArray(loc2);
-	glBindBuffer(GL_ARRAY_BUFFER, VN_VBO[0]);
-	glVertexAttribPointer(loc2, 3, GL_FLOAT, GL_FALSE, 0, NULL);
-
-	// Sled
-	glGenBuffers(1, &VP_VBO[1]);
-	glBindBuffer(GL_ARRAY_BUFFER, VP_VBO[1]);
-	glBufferData(GL_ARRAY_BUFFER, sled.mPointCount * sizeof(vec3), &sled.mVertices[0], GL_STATIC_DRAW);
-
-	glGenBuffers(1, &VN_VBO[1]);
-	glBindBuffer(GL_ARRAY_BUFFER, VN_VBO[1]);
-	glBufferData(GL_ARRAY_BUFFER, sled.mPointCount * sizeof(vec3), &sled.mNormals[0], GL_STATIC_DRAW);
-
-	glGenVertexArrays(1, &VAO[1]);
-	glBindVertexArray(VAO[1]);
-
-	glEnableVertexAttribArray(loc1);
-	glBindBuffer(GL_ARRAY_BUFFER, VP_VBO[1]);
-	glVertexAttribPointer(loc1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
-
-	glEnableVertexAttribArray(loc2);
-	glBindBuffer(GL_ARRAY_BUFFER, VN_VBO[1]);
-	glVertexAttribPointer(loc2, 3, GL_FLOAT, GL_FALSE, 0, NULL);
-
-	// Ground ------------------------------------------------------------------
-	glGenTextures(1, &VTO[2]);
-	glBindTexture(GL_TEXTURE_2D, VTO[2]);
-	stbi_set_flip_vertically_on_load(1);
-
-	// load and generate the texture
-	data = stbi_load(snowFloor, &width, &height, &nrChannels, 0);
-	if (data)
-	{
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D);
-		std::cout << "Loaded texture" << std::endl;
-	}
-	else
-	{
-		std::cout << "Failed to load texture" << std::endl;
-	}
-	stbi_image_free(data);
-
-	glGenBuffers(1, &VP_VBO[2]);
-	glBindBuffer(GL_ARRAY_BUFFER, VP_VBO[2]);
-	glBufferData(GL_ARRAY_BUFFER, ground.mPointCount * sizeof(vec3), &ground.mVertices[0], GL_STATIC_DRAW);
-
-	glGenBuffers(1, &VN_VBO[2]);
-	glBindBuffer(GL_ARRAY_BUFFER, VN_VBO[2]);
-	glBufferData(GL_ARRAY_BUFFER, ground.mPointCount * sizeof(vec3), &ground.mNormals[0], GL_STATIC_DRAW);
-
-	glGenBuffers(1, &VT_VBO[2]);
-	glBindBuffer(GL_ARRAY_BUFFER, VT_VBO[2]);
-	glBufferData(GL_ARRAY_BUFFER, ground.mPointCount * sizeof(vec2), &ground.mTextureCoords[0], GL_STATIC_DRAW);
-
-	glGenVertexArrays(1, &VAO[2]);
-	glBindVertexArray(VAO[2]);
-
-	glEnableVertexAttribArray(loc1);
-	glBindBuffer(GL_ARRAY_BUFFER, VP_VBO[2]);
-	glVertexAttribPointer(loc1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
-
-	glEnableVertexAttribArray(loc2);
-	glBindBuffer(GL_ARRAY_BUFFER, VN_VBO[2]);
-	glVertexAttribPointer(loc2, 3, GL_FLOAT, GL_FALSE, 0, NULL);
-
-	glEnableVertexAttribArray(loc3);
-	glBindBuffer(GL_ARRAY_BUFFER, VT_VBO[2]);
-	glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
+	// Ground -------------------------------------------------
+	vbovaoStuff(ground, snowFloor, 2);
 }
 #pragma endregion VBO_FUNCTIONS
 
@@ -409,7 +383,7 @@ void display() {
 
 	mat4 groundModel = identity_mat4();
 	groundModel = translate(groundModel, vec3(0.0f, 0.0f, 0.0f));
-	groundModel = scale(groundModel, vec3(5.0f, 5.0f, 5.0f));
+	groundModel = scale(groundModel, vec3(10.0f, 10.0f, 10.0f));
 
 	glBindVertexArray(VAO[2]);
 
@@ -417,25 +391,29 @@ void display() {
 	glDrawArrays(GL_TRIANGLES, 0, ground.mPointCount);
 
 	// - SLED ----------------------------------------------------------
+	glBindTexture(GL_TEXTURE_2D, VTO[1]);
 
 	mat4 sledModel = identity_mat4();
-	sledModel = translate(sledModel, vec3(0.0f, sledVertical, 0.0f));
+	sledModel = translate(sledModel, vec3(0.0f, 0.0f, 0.0f));
 	sledModel = rotate_y_deg(sledModel, sledDirection);
-	sledModel = scale(sledModel, vec3(5.0f, 5.0f, 5.0f));
+	sledModel = scale(sledModel, vec3(4.0f, 4.0f, 4.0f));
+	sledModel = translate(sledModel, vec3(0.0f, 2.5f, 0.0f));
 
 	glBindVertexArray(VAO[1]);
 
 	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, sledModel.m);
-	//glDrawArrays(GL_TRIANGLES, 0, sled.mPointCount);
+	glDrawArrays(GL_TRIANGLES, 0, sled.mPointCount);
 
 
 	// -- SNOWMAN -------------------------------------------------------
+	glBindTexture(GL_TEXTURE_2D, VTO[0]);
+
 	mat4 snowmanModel = identity_mat4();
 	snowmanModel = translate(snowmanModel, vec3(0.0f, 0.0f, 0.0f));
 	snowmanModel = rotate_y_deg(snowmanModel, snowmanRotateY);
 	snowmanModel = rotate_x_deg(snowmanModel, snowmanRotateX);
 	snowmanModel = scale(snowmanModel, vec3(0.1f, 0.1f, 0.1f));
-	snowmanModel = translate(snowmanModel, vec3(0.0f, 2.5f, 0.0f));
+	snowmanModel = translate(snowmanModel, vec3(0.0f, 4.1f, 0.0f));
 
 	// update uniforms & draw
 	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, snowmanModel.m);
@@ -448,7 +426,7 @@ void display() {
 	snowmanModel = snowmanModel * sledModel;
 
 	glUniformMatrix4fv(matrix_location, 1, GL_FALSE, snowmanModel.m);
-	//glDrawArrays(GL_TRIANGLES, 0, snowman.mPointCount);
+	glDrawArrays(GL_TRIANGLES, 0, snowman.mPointCount);
 
 
 	glutSwapBuffers();
